@@ -17,8 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aylauncher.data.AppState
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import com.aylauncher.resources.Res
+import com.aylauncher.resources.creeper_face
 import com.aylauncher.ui.screens.*
 import com.aylauncher.ui.theme.*
+import org.jetbrains.compose.resources.painterResource
 
 enum class AppScreen {
     Home, Installations, Skins, Marketplace, Settings, About, FileManager, Account
@@ -80,25 +85,16 @@ fun Sidebar(
             .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Creeper face logo
-        Box(
+        // Creeper face logo (reference asset)
+        Image(
+            painter = painterResource(Res.drawable.creeper_face),
+            contentDescription = "AY Launcher",
             modifier = Modifier
                 .size(52.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(CreeperFaceGreen)
                 .clickable { onNavigate(AppScreen.Home) },
-            contentAlignment = Alignment.Center
-        ) {
-            // Simple creeper-face blocks using nested boxes
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.size(10.dp, 10.dp).background(Color(0xFF1B1B1B), RoundedCornerShape(1.dp)))
-                    Box(Modifier.size(10.dp, 10.dp).background(Color(0xFF1B1B1B), RoundedCornerShape(1.dp)))
-                }
-                Spacer(Modifier.height(4.dp))
-                Box(Modifier.size(12.dp, 10.dp).background(Color(0xFF1B1B1B), RoundedCornerShape(1.dp)))
-            }
-        }
+            contentScale = ContentScale.Crop
+        )
 
         Spacer(Modifier.height(18.dp))
 
@@ -116,11 +112,13 @@ fun Sidebar(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 6.dp)
         ) {
-            Box(
+            Image(
+                painter = painterResource(Res.drawable.creeper_face),
+                contentDescription = null,
                 modifier = Modifier
                     .size(28.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(CreeperFaceGreen)
+                    .clip(RoundedCornerShape(6.dp)),
+                contentScale = ContentScale.Crop
             )
             Spacer(Modifier.height(4.dp))
             Text(

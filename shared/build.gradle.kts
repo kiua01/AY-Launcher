@@ -47,6 +47,12 @@ kotlin {
     }
 }
 
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.aylauncher.resources"
+    generateResClass = always
+}
+
 android {
     namespace = "com.aylauncher.shared"
     compileSdk = 35
