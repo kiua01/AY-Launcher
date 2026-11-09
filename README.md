@@ -114,8 +114,10 @@ cargo build --release
 - [x] Clickable sidebar navigation
 - [x] New Instance → Create form flow with live in-memory list
 - [x] Domain models + simple repositories (Account / Instance)
-- [ ] Account system (Offline fully + Microsoft OAuth)
-- [ ] Version manifest downloading from Mojang
+- [x] Offline accounts (create, switch, show in UI)
+- [ ] Microsoft OAuth
+- [x] Version list stub (static popular versions)
+- [ ] Real Mojang version manifest download
 - [ ] Real instance folders + game directory management
 - [ ] Rust core integration for downloads & launch
 - [ ] File Manager full implementation (real FS)
