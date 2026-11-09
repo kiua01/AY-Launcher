@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aylauncher.data.AppState
+import com.aylauncher.data.InstallState
 import com.aylauncher.data.VersionsState
 import com.aylauncher.domain.LoaderType
 import com.aylauncher.ui.theme.*
@@ -25,8 +26,19 @@ fun InstallationsScreen(
     onCreateNew: () -> Unit = {}
 ) {
     val instances by AppState.instances.instances.collectAsState()
+    val installState by AppState.installer.state.collectAsState()
+    val versionsState by AppState.versions.state.collectAsState()
+    val scope = rememberCoroutineScope()
+
     var showNewInstance by remember { mutableStateOf(false) }
     var showCreateForm by remember { mutableStateOf(false) }
+
+    // Ensure versions are loaded (needed for install URLs)
+    LaunchedEffect(Unit) {
+        if (versionsState is VersionsState.Idle) {
+            AppState.versions.refresh()
+        }
+    }
 
     Column(
         Modifier
@@ -49,7 +61,37 @@ fun InstallationsScreen(
             }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Install progress banner
+        when (val s = installState) {
+            is InstallState.Preparing -> {
+                InstallBanner("Preparing ${s.versionId}…", progress = null)
+            }
+            is InstallState.Downloading -> {
+                val prog = if (s.total > 0) s.completed.toFloat() / s.total else 0f
+                InstallBanner(
+                    "Downloading ${s.versionId}: ${s.current} (${s.completed}/${s.total})",
+                    progress = prog
+                )
+            }
+            is InstallState.Success -> {
+                InstallBanner("Installed ${s.versionId} → ${s.gameDir}", progress = 1f, success = true)
+                LaunchedEffect(s) {
+                    kotlinx.coroutines.delay(4000)
+                    AppState.installer.reset()
+                }
+            }
+            is InstallState.Error -> {
+                InstallBanner("Error: ${s.message}", progress = null, error = true)
+                TextButton(onClick = { AppState.installer.reset() }) {
+                    Text("Dismiss")
+                }
+            }
+            else -> {}
+        }
+
+        Spacer(Modifier.height(12.dp))
 
         if (instances.isEmpty()) {
             Card(
@@ -104,8 +146,24 @@ fun InstallationsScreen(
                                 color = TextSecondary
                             )
                         }
+                        // Install version files
+                        OutlinedButton(
+                            onClick = {
+                                val url = findVersionUrl(inst.minecraftVersion, versionsState)
+                                if (url != null) {
+                                    scope.launch {
+                                        AppState.installer.install(inst.minecraftVersion, url)
+                                    }
+                                }
+                            },
+                            enabled = installState is InstallState.Idle || installState is InstallState.Success || installState is InstallState.Error,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Install", fontSize = 13.sp)
+                        }
+                        Spacer(Modifier.width(8.dp))
                         Button(
-                            onClick = { /* play later */ },
+                            onClick = { /* launch later */ },
                             colors = ButtonDefaults.buttonColors(containerColor = GoldButton),
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -144,6 +202,55 @@ fun InstallationsScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun InstallBanner(
+    text: String,
+    progress: Float?,
+    success: Boolean = false,
+    error: Boolean = false
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                error -> Color(0xFFFFEBEE)
+                success -> Color(0xFFE8F5E9)
+                else -> SoftCream
+            }
+        )
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Text(
+                text,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = when {
+                    error -> Color(0xFFC62828)
+                    success -> Color(0xFF2E7D32)
+                    else -> TextPrimary
+                }
+            )
+            if (progress != null) {
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                    color = if (success) OnlineGreen else WarmYellow,
+                    trackColor = Color.White
+                )
+            }
+        }
+    }
+}
+
+private fun findVersionUrl(versionId: String, state: VersionsState): String? {
+    return when (state) {
+        is VersionsState.Ready -> state.all.find { it.id == versionId }?.url?.takeIf { it.isNotBlank() }
+        else -> null
     }
 }
 
@@ -251,14 +358,12 @@ fun CreateInstanceForm(
     val versionsState by AppState.versions.state.collectAsState()
     val scope = rememberCoroutineScope()
 
-    // Load versions when the form opens
     LaunchedEffect(Unit) {
         if (versionsState is VersionsState.Idle || versionsState is VersionsState.Error) {
             AppState.versions.refresh()
         }
     }
 
-    // Keep selectedVersion in sync with latest when data arrives
     LaunchedEffect(versionsState) {
         when (val s = versionsState) {
             is VersionsState.Ready -> {
@@ -391,7 +496,6 @@ fun CreateInstanceForm(
             }
 
             Spacer(Modifier.height(8.dp))
-            // Scrollable-ish chip row of versions
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -439,17 +543,6 @@ fun CreateInstanceForm(
                     )
                 )
                 Text("${ram.toInt()} MB", fontWeight = FontWeight.Bold, modifier = Modifier.width(80.dp))
-            }
-
-            Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Use launcher default", fontSize = 13.sp, color = TextSecondary)
-                Spacer(Modifier.weight(1f))
-                Switch(
-                    checked = true,
-                    onCheckedChange = {},
-                    colors = SwitchDefaults.colors(checkedTrackColor = OnlineGreen)
-                )
             }
 
             Spacer(Modifier.height(24.dp))

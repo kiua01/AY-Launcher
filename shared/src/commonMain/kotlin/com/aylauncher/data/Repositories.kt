@@ -57,7 +57,6 @@ class AccountRepository {
         return safe
     }
 
-    /** Restore without validation side-effects (used by Persistence) */
     fun restore(account: Account) {
         if (_accounts.value.any { it.id == account.id }) return
         _accounts.update { it + account.copy(accessToken = null) }
@@ -119,8 +118,8 @@ object AppState {
     val instances = InstanceRepository()
     val auth = AuthService()
     val versions = VersionService()
+    val installer = VersionInstaller()
 
-    /** Call once at app start */
     fun bootstrap() {
         Persistence.loadIntoAppState()
     }
