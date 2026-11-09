@@ -115,7 +115,8 @@ cargo build --release
 - [x] New Instance → Create form flow with live in-memory list
 - [x] Domain models + simple repositories (Account / Instance)
 - [x] Offline accounts (create, switch, show in UI)
-- [ ] Microsoft OAuth
+- [x] Microsoft device-code UI flow (simulation only, no secrets)
+- [ ] Real Microsoft OAuth + token exchange
 - [x] Version list stub (static popular versions)
 - [ ] Real Mojang version manifest download
 - [ ] Real instance folders + game directory management

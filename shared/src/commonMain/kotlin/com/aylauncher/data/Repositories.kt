@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.update
 
 /**
  * In-memory repositories for the early scaffold.
- * Later these will be backed by local storage + network (Microsoft auth, Mojang manifests, Modrinth, etc.)
+ * Later these will be backed by local storage + network
  * and the Rust core for heavy file / download work.
+ *
+ * No secrets or tokens are persisted in this stage.
  */
 
 class AccountRepository {
@@ -24,7 +26,9 @@ class AccountRepository {
 
     fun addOffline(username: String): Account {
         val clean = username.trim()
-        // Reuse existing offline account with same name if present
+        require(clean.isNotEmpty()) { "Username cannot be empty" }
+        require(clean.length in 3..16) { "Username must be 3–16 characters" }
+
         val existing = _accounts.value.find {
             it.type == AccountType.OFFLINE && it.username.equals(clean, ignoreCase = true)
         }
@@ -40,6 +44,22 @@ class AccountRepository {
         _accounts.update { it + account }
         _active.value = account
         return account
+    }
+
+    fun addMicrosoft(account: Account): Account {
+        require(account.type == AccountType.MICROSOFT)
+        val existing = _accounts.value.find {
+            it.type == AccountType.MICROSOFT && it.username.equals(account.username, ignoreCase = true)
+        }
+        if (existing != null) {
+            _active.value = existing
+            return existing
+        }
+        // Never keep a real access token in the in-memory model at this stage
+        val safe = account.copy(accessToken = null)
+        _accounts.update { it + safe }
+        _active.value = safe
+        return safe
     }
 
     fun setActive(account: Account?) {
@@ -65,13 +85,15 @@ class InstanceRepository {
         loaderVersion: String? = null,
         ramMb: Int = 4096
     ): Instance {
+        val cleanName = name.trim().ifEmpty { "New Instance" }
+        val safeRam = ramMb.coerceIn(1024, 32768)
         val instance = Instance(
             id = "inst-${System.currentTimeMillis()}",
-            name = name,
+            name = cleanName,
             minecraftVersion = minecraftVersion,
             loader = loader,
             loaderVersion = loaderVersion,
-            ramMb = ramMb
+            ramMb = safeRam
         )
         _instances.update { it + instance }
         return instance
@@ -86,4 +108,5 @@ class InstanceRepository {
 object AppState {
     val accounts = AccountRepository()
     val instances = InstanceRepository()
+    val auth = AuthService()
 }
