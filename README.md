@@ -110,11 +110,15 @@ cargo build --release
 ## Roadmap (high level)
 
 - [x] Repo + architecture + UI skeleton matching designs
-- [ ] Complete Compose theme + all main screens
-- [ ] Account system (Offline + Microsoft)
-- [ ] Version manifest downloading & instance creation
+- [x] Compose theme + main screens (Home, Account, Installations, File Manager, Settings, About)
+- [x] Clickable sidebar navigation
+- [x] New Instance → Create form flow with live in-memory list
+- [x] Domain models + simple repositories (Account / Instance)
+- [ ] Account system (Offline fully + Microsoft OAuth)
+- [ ] Version manifest downloading from Mojang
+- [ ] Real instance folders + game directory management
 - [ ] Rust core integration for downloads & launch
-- [ ] File Manager full implementation
+- [ ] File Manager full implementation (real FS)
 - [ ] Mod / modpack installer (Modrinth first)
 - [ ] Android packaging & large-screen polish
 - [ ] Desktop packaging (jpackage / native)
