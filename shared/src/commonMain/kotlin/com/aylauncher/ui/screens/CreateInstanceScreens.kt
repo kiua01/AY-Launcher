@@ -15,9 +15,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aylauncher.data.AppState
+import com.aylauncher.data.VersionsState
 import com.aylauncher.domain.LoaderType
-import com.aylauncher.data.VersionService
 import com.aylauncher.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun InstallationsScreen(
@@ -104,7 +105,7 @@ fun InstallationsScreen(
                             )
                         }
                         Button(
-                            onClick = { /* play */ },
+                            onClick = { /* play later */ },
                             colors = ButtonDefaults.buttonColors(containerColor = GoldButton),
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -241,11 +242,49 @@ fun CreateInstanceForm(
     onCancel: () -> Unit = {},
     onCreate: (name: String, version: String, loader: LoaderType, ramMb: Int) -> Unit = { _, _, _, _ -> }
 ) {
-    var name by remember { mutableStateOf("Fabric 1.21") }
+    var name by remember { mutableStateOf("New Instance") }
     var ram by remember { mutableStateOf(4096f) }
     var selectedLoader by remember { mutableStateOf("FABRIC") }
+    var selectedVersion by remember { mutableStateOf("1.21.3") }
+    var showSnapshots by remember { mutableStateOf(false) }
+
+    val versionsState by AppState.versions.state.collectAsState()
+    val scope = rememberCoroutineScope()
+
+    // Load versions when the form opens
+    LaunchedEffect(Unit) {
+        if (versionsState is VersionsState.Idle || versionsState is VersionsState.Error) {
+            AppState.versions.refresh()
+        }
+    }
+
+    // Keep selectedVersion in sync with latest when data arrives
+    LaunchedEffect(versionsState) {
+        when (val s = versionsState) {
+            is VersionsState.Ready -> {
+                if (selectedVersion.isBlank() || selectedVersion == "1.21.3") {
+                    selectedVersion = s.latestRelease
+                }
+            }
+            is VersionsState.Error -> {
+                if (selectedVersion.isBlank()) {
+                    selectedVersion = s.fallback.firstOrNull()?.id ?: "1.21.3"
+                }
+            }
+            else -> {}
+        }
+    }
 
     val loaders = listOf("VANILLA", "FABRIC", "FORGE", "NEOFORGE", "QUILT", "OPTIFINE")
+
+    val versionOptions: List<String> = when (val s = versionsState) {
+        is VersionsState.Ready -> {
+            if (showSnapshots) s.snapshots.take(30).map { it.id }
+            else s.releases.take(40).map { it.id }
+        }
+        is VersionsState.Error -> s.fallback.map { it.id }
+        else -> listOf("1.21.3", "1.21.1", "1.20.6")
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -289,8 +328,37 @@ fun CreateInstanceForm(
             }
 
             Spacer(Modifier.height(16.dp))
-            Text("MINECRAFT VERSION", fontWeight = FontWeight.SemiBold)
-            var selectedVersion by remember { mutableStateOf(VersionService.popularVersions.first().id) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("MINECRAFT VERSION", fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.weight(1f))
+                when (versionsState) {
+                    is VersionsState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = WarmYellow
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("Loading…", fontSize = 12.sp, color = TextSecondary)
+                    }
+                    is VersionsState.Ready -> {
+                        Text(
+                            "Latest: ${(versionsState as VersionsState.Ready).latestRelease}",
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
+                    }
+                    is VersionsState.Error -> {
+                        Text("Offline list", fontSize = 12.sp, color = Color(0xFFE53935))
+                        TextButton(onClick = { scope.launch { AppState.versions.refresh(force = true) } }) {
+                            Text("Retry", fontSize = 12.sp)
+                        }
+                    }
+                    else -> {}
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
             Surface(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -300,18 +368,39 @@ fun CreateInstanceForm(
                     Modifier.padding(horizontal = 16.dp).fillMaxSize(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(selectedVersion, Modifier.weight(1f))
+                    Text(selectedVersion, Modifier.weight(1f), fontWeight = FontWeight.Medium)
                     Text("▼", color = TextSecondary)
                 }
             }
-            // Simple chips for quick version pick (full dropdown later)
+
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                VersionService.releases().take(5).forEach { v ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FilterChip(
+                    selected = !showSnapshots,
+                    onClick = { showSnapshots = false },
+                    label = { Text("Releases", fontSize = 12.sp) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = GoldButton)
+                )
+                Spacer(Modifier.width(8.dp))
+                FilterChip(
+                    selected = showSnapshots,
+                    onClick = { showSnapshots = true },
+                    label = { Text("Snapshots", fontSize = 12.sp) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = GoldButton)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+            // Scrollable-ish chip row of versions
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                versionOptions.take(8).forEach { id ->
                     FilterChip(
-                        selected = selectedVersion == v.id,
-                        onClick = { selectedVersion = v.id },
-                        label = { Text(v.id, fontSize = 11.sp) },
+                        selected = selectedVersion == id,
+                        onClick = { selectedVersion = id },
+                        label = { Text(id, fontSize = 11.sp) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = GoldButton
                         )

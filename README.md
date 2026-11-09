@@ -117,8 +117,8 @@ cargo build --release
 - [x] Offline accounts (create, switch, show in UI)
 - [x] Microsoft device-code UI flow (simulation only, no secrets)
 - [ ] Real Microsoft OAuth + token exchange
-- [x] Version list stub (static popular versions)
-- [ ] Real Mojang version manifest download
+- [x] Live Mojang version manifest (Ktor + cache + fallback)
+- [x] Create Instance version picker with Releases/Snapshots + loading states
 - [ ] Real instance folders + game directory management
 - [ ] Rust core integration for downloads & launch
 - [ ] File Manager full implementation (real FS)

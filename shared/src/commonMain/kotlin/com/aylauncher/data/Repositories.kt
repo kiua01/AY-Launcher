@@ -11,10 +11,7 @@ import kotlinx.coroutines.flow.update
 
 /**
  * In-memory repositories for the early scaffold.
- * Later these will be backed by local storage + network
- * and the Rust core for heavy file / download work.
- *
- * No secrets or tokens are persisted in this stage.
+ * Persistence layer can be added later without changing the UI contracts.
  */
 
 class AccountRepository {
@@ -55,7 +52,6 @@ class AccountRepository {
             _active.value = existing
             return existing
         }
-        // Never keep a real access token in the in-memory model at this stage
         val safe = account.copy(accessToken = null)
         _accounts.update { it + safe }
         _active.value = safe
@@ -104,9 +100,10 @@ class InstanceRepository {
     }
 }
 
-/** Simple app-wide holder until proper DI is introduced */
+/** App-wide holder until proper DI is introduced */
 object AppState {
     val accounts = AccountRepository()
     val instances = InstanceRepository()
     val auth = AuthService()
+    val versions = VersionService()
 }
