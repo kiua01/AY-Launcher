@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aylauncher.data.AppState
 import com.aylauncher.data.InstallState
+import com.aylauncher.data.LaunchState
 import com.aylauncher.data.VersionsState
 import com.aylauncher.domain.LoaderType
 import com.aylauncher.ui.theme.*
@@ -27,6 +28,8 @@ fun InstallationsScreen(
 ) {
     val instances by AppState.instances.instances.collectAsState()
     val installState by AppState.installer.state.collectAsState()
+    val launchState by AppState.launcher.state.collectAsState()
+    val activeAccount by AppState.accounts.activeAccount.collectAsState()
     val versionsState by AppState.versions.state.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -87,6 +90,29 @@ fun InstallationsScreen(
                 TextButton(onClick = { AppState.installer.reset() }) {
                     Text("Dismiss")
                 }
+            }
+            else -> {}
+        }
+
+        when (val ls = launchState) {
+            is LaunchState.Starting -> {
+                InstallBanner("Starting ${ls.instanceName}…", progress = null)
+            }
+            is LaunchState.Running -> {
+                InstallBanner(
+                    "Running ${ls.instanceName}" + (ls.pid?.let { " (pid $it)" } ?: ""),
+                    progress = 1f,
+                    success = true
+                )
+            }
+            is LaunchState.Error -> {
+                InstallBanner("Launch error: ${ls.message}", progress = null, error = true)
+                TextButton(onClick = { AppState.launcher.reset() }) {
+                    Text("Dismiss")
+                }
+            }
+            is LaunchState.Exited -> {
+                InstallBanner("Exited ${ls.instanceName} (code ${ls.code})", progress = null)
             }
             else -> {}
         }
@@ -163,7 +189,12 @@ fun InstallationsScreen(
                         }
                         Spacer(Modifier.width(8.dp))
                         Button(
-                            onClick = { /* launch later */ },
+                            onClick = {
+                                scope.launch {
+                                    AppState.launcher.launch(inst, activeAccount)
+                                }
+                            },
+                            enabled = launchState !is LaunchState.Starting,
                             colors = ButtonDefaults.buttonColors(containerColor = GoldButton),
                             shape = RoundedCornerShape(12.dp)
                         ) {

@@ -119,6 +119,7 @@ object AppState {
     val auth = AuthService()
     val versions = VersionService()
     val installer = VersionInstaller()
+    val launcher = GameLauncher()
 
     fun bootstrap() {
         Persistence.loadIntoAppState()
