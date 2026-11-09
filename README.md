@@ -123,7 +123,7 @@ cargo build --release
 - [ ] Android persistent storage (Context filesDir)
 - [ ] Real instance folders + game directory management
 - [ ] Rust core integration for downloads & launch
-- [ ] File Manager full implementation (real FS)
+- [x] File Manager (Desktop real FS, safe root; Android stub tree)
 - [ ] Mod / modpack installer (Modrinth first)
 - [ ] Android packaging & large-screen polish
 - [ ] Desktop packaging (jpackage / native)
