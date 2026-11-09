@@ -1,6 +1,8 @@
 package com.aylauncher.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -9,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,14 +46,22 @@ fun AYLauncherApp() {
                     .padding(16.dp)
             ) {
                 when (currentScreen) {
-                    AppScreen.Home -> HomeScreen()
-                    AppScreen.Installations -> InstallationsScreen()
+                    AppScreen.Home -> HomeScreen(
+                        onPlay = { currentScreen = AppScreen.Installations },
+                        onOpenAccount = { currentScreen = AppScreen.Account }
+                    )
+                    AppScreen.Installations -> InstallationsScreen(
+                        onCreateNew = { /* will open dialog later */ }
+                    )
                     AppScreen.Skins -> PlaceholderScreen("Skins")
                     AppScreen.Marketplace -> PlaceholderScreen("Marketplace")
                     AppScreen.Settings -> SettingsScreen()
-                    AppScreen.About -> PlaceholderScreen("About")
+                    AppScreen.About -> AboutScreen()
                     AppScreen.FileManager -> FileManagerScreen()
-                    AppScreen.Account -> AccountScreen()
+                    AppScreen.Account -> AccountScreen(
+                        onSelectOffline = { /* handle offline */ },
+                        onSelectMicrosoft = { /* handle microsoft */ }
+                    )
                 }
             }
         }
@@ -64,39 +75,80 @@ fun Sidebar(
 ) {
     Column(
         modifier = Modifier
-            .width(92.dp)
+            .width(96.dp)
             .fillMaxHeight()
             .background(SoftCream)
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Creeper / logo area
+        // Logo / Creeper-style mark
         Box(
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(CreeperGreen),
+                .background(CreeperGreen)
+                .clickable { onNavigate(AppScreen.Home) },
             contentAlignment = Alignment.Center
         ) {
             Text("AY", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
 
-        SidebarItem("🏠", "Home", current == AppScreen.Home) { onNavigate(AppScreen.Home) }
-        SidebarItem("📦", "Installations", current == AppScreen.Installations) { onNavigate(AppScreen.Installations) }
-        SidebarItem("👕", "Skins", current == AppScreen.Skins) { onNavigate(AppScreen.Skins) }
-        SidebarItem("🛒", "Marketplace", current == AppScreen.Marketplace) { onNavigate(AppScreen.Marketplace) }
-        SidebarItem("⚙️", "Settings", current == AppScreen.Settings) { onNavigate(AppScreen.Settings) }
-        SidebarItem("ℹ️", "About", current == AppScreen.About) { onNavigate(AppScreen.About) }
-        SidebarItem("📁", "File Manager", current == AppScreen.FileManager) { onNavigate(AppScreen.FileManager) }
-        SidebarItem("👤", "Account", current == AppScreen.Account) { onNavigate(AppScreen.Account) }
+        SidebarItem(
+            icon = "🏠",
+            label = "Home",
+            selected = current == AppScreen.Home,
+            onClick = { onNavigate(AppScreen.Home) }
+        )
+        SidebarItem(
+            icon = "📦",
+            label = "Installations",
+            selected = current == AppScreen.Installations,
+            onClick = { onNavigate(AppScreen.Installations) }
+        )
+        SidebarItem(
+            icon = "👕",
+            label = "Skins",
+            selected = current == AppScreen.Skins,
+            onClick = { onNavigate(AppScreen.Skins) }
+        )
+        SidebarItem(
+            icon = "🛒",
+            label = "Marketplace",
+            selected = current == AppScreen.Marketplace,
+            onClick = { onNavigate(AppScreen.Marketplace) }
+        )
+        SidebarItem(
+            icon = "⚙️",
+            label = "Settings",
+            selected = current == AppScreen.Settings,
+            onClick = { onNavigate(AppScreen.Settings) }
+        )
+        SidebarItem(
+            icon = "ℹ️",
+            label = "About",
+            selected = current == AppScreen.About,
+            onClick = { onNavigate(AppScreen.About) }
+        )
+        SidebarItem(
+            icon = "📁",
+            label = "File Manager",
+            selected = current == AppScreen.FileManager,
+            onClick = { onNavigate(AppScreen.FileManager) }
+        )
+        SidebarItem(
+            icon = "👤",
+            label = "Account",
+            selected = current == AppScreen.Account,
+            onClick = { onNavigate(AppScreen.Account) }
+        )
 
         Spacer(Modifier.weight(1f))
 
         // Online indicator
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("● Online", color = OnlineGreen, fontSize = 11.sp)
+            Text("● Online", color = OnlineGreen, fontSize = 11.sp, fontWeight = FontWeight.Medium)
             Text("AY Launcher", color = TextSecondary, fontSize = 10.sp)
             Text("v0.1.0", color = TextSecondary, fontSize = 10.sp)
         }
@@ -111,18 +163,30 @@ fun SidebarItem(
     onClick: () -> Unit
 ) {
     val bg = if (selected) SidebarSelected else Color.Transparent
+    val interactionSource = remember { MutableInteractionSource() }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 6.dp, vertical = 3.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(bg)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null, // keep clean look matching designs
+                role = Role.Button,
+                onClick = onClick
+            )
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(icon, fontSize = 22.sp)
-        Text(label, fontSize = 10.sp, color = TextPrimary, maxLines = 1)
-        // We use a simple clickable via the whole column – for production use Modifier.clickable
-        // (added in full implementation)
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = if (selected) TextPrimary else TextSecondary,
+            maxLines = 1,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        )
     }
 }

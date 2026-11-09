@@ -16,7 +16,10 @@ import androidx.compose.ui.unit.sp
 import com.aylauncher.ui.theme.*
 
 @Composable
-fun AccountScreen() {
+fun AccountScreen(
+    onSelectOffline: () -> Unit = {},
+    onSelectMicrosoft: () -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -37,14 +40,14 @@ fun AccountScreen() {
                 "AY LAUNCHER",
                 color = Color.White.copy(0.9f),
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                fontSize = 16.sp
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 "Account Type",
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 32.sp
+                fontSize = 34.sp
             )
             Text(
                 "Choose how you want to play",
@@ -52,27 +55,26 @@ fun AccountScreen() {
                 fontSize = 16.sp
             )
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(36.dp))
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Offline
                 AccountCard(
                     title = "Offline Account",
                     subtitle = "Play without signing in to Microsoft.",
                     buttonText = "Select →",
                     buttonColor = GoldButton,
-                    onClick = {}
+                    recommended = false,
+                    onClick = onSelectOffline
                 )
-                // Microsoft
                 AccountCard(
                     title = "Microsoft Account",
                     subtitle = "AY Launcher recommends to play with it.",
                     buttonText = "Sign In with Microsoft →",
                     buttonColor = Color(0xFF4CAF50),
                     recommended = true,
-                    onClick = {}
+                    onClick = onSelectMicrosoft
                 )
             }
         }
@@ -89,39 +91,60 @@ fun AccountCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.width(320.dp).height(340.dp),
+        modifier = Modifier.width(320.dp).height(360.dp),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = CardBackground)
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
             modifier = Modifier.padding(24.dp).fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Placeholder avatar area
             Box(
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(130.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(SoftCream),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (recommended) "👑" else "🧑", fontSize = 48.sp)
+                Text(if (recommended) "👑" else "🧑", fontSize = 56.sp)
             }
             Spacer(Modifier.height(16.dp))
             Text(title, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             if (recommended) {
-                Text("⭐ Recommended", color = WarmYellow, fontSize = 13.sp)
+                Spacer(Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFFFF3C4)
+                ) {
+                    Text(
+                        "⭐ Recommended",
+                        color = WarmYellow,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            Text(subtitle, fontSize = 14.sp, color = TextSecondary, modifier = Modifier.padding(horizontal = 8.dp))
+            Spacer(Modifier.height(10.dp))
+            Text(
+                subtitle,
+                fontSize = 14.sp,
+                color = TextSecondary,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
             Spacer(Modifier.weight(1f))
             Button(
                 onClick = onClick,
                 colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
                 shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.fillMaxWidth().height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Text(buttonText, color = if (buttonColor == GoldButton) TextPrimary else Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    buttonText,
+                    color = if (buttonColor == GoldButton) TextPrimary else Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
