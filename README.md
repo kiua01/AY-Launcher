@@ -119,6 +119,8 @@ cargo build --release
 - [ ] Real Microsoft OAuth + token exchange
 - [x] Live Mojang version manifest (Ktor + cache + fallback)
 - [x] Create Instance version picker with Releases/Snapshots + loading states
+- [x] Persist accounts + instances (Desktop: ~/.aylauncher/state.json)
+- [ ] Android persistent storage (Context filesDir)
 - [ ] Real instance folders + game directory management
 - [ ] Rust core integration for downloads & launch
 - [ ] File Manager full implementation (real FS)

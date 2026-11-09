@@ -11,6 +11,7 @@ data class Account(
     val accessToken: String? = null
 )
 
+@Serializable
 enum class AccountType {
     OFFLINE,
     MICROSOFT
@@ -28,6 +29,7 @@ data class Instance(
     val gameDir: String? = null
 )
 
+@Serializable
 enum class LoaderType {
     VANILLA,
     FABRIC,

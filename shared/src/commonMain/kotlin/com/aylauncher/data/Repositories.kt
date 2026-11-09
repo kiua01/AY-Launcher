@@ -9,11 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-/**
- * In-memory repositories for the early scaffold.
- * Persistence layer can be added later without changing the UI contracts.
- */
-
 class AccountRepository {
     private val _accounts = MutableStateFlow<List<Account>>(emptyList())
     val accounts: StateFlow<List<Account>> = _accounts.asStateFlow()
@@ -31,6 +26,7 @@ class AccountRepository {
         }
         if (existing != null) {
             _active.value = existing
+            Persistence.saveFromAppState()
             return existing
         }
         val account = Account(
@@ -40,6 +36,7 @@ class AccountRepository {
         )
         _accounts.update { it + account }
         _active.value = account
+        Persistence.saveFromAppState()
         return account
     }
 
@@ -50,16 +47,25 @@ class AccountRepository {
         }
         if (existing != null) {
             _active.value = existing
+            Persistence.saveFromAppState()
             return existing
         }
         val safe = account.copy(accessToken = null)
         _accounts.update { it + safe }
         _active.value = safe
+        Persistence.saveFromAppState()
         return safe
+    }
+
+    /** Restore without validation side-effects (used by Persistence) */
+    fun restore(account: Account) {
+        if (_accounts.value.any { it.id == account.id }) return
+        _accounts.update { it + account.copy(accessToken = null) }
     }
 
     fun setActive(account: Account?) {
         _active.value = account
+        Persistence.saveFromAppState()
     }
 
     fun remove(id: String) {
@@ -67,6 +73,7 @@ class AccountRepository {
         if (_active.value?.id == id) {
             _active.value = _accounts.value.firstOrNull()
         }
+        Persistence.saveFromAppState()
     }
 }
 
@@ -92,18 +99,29 @@ class InstanceRepository {
             ramMb = safeRam
         )
         _instances.update { it + instance }
+        Persistence.saveFromAppState()
         return instance
+    }
+
+    fun restore(instance: Instance) {
+        if (_instances.value.any { it.id == instance.id }) return
+        _instances.update { it + instance }
     }
 
     fun delete(id: String) {
         _instances.update { list -> list.filterNot { it.id == id } }
+        Persistence.saveFromAppState()
     }
 }
 
-/** App-wide holder until proper DI is introduced */
 object AppState {
     val accounts = AccountRepository()
     val instances = InstanceRepository()
     val auth = AuthService()
     val versions = VersionService()
+
+    /** Call once at app start */
+    fun bootstrap() {
+        Persistence.loadIntoAppState()
+    }
 }
