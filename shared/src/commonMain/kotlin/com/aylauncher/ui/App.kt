@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aylauncher.data.AppState
-import com.aylauncher.domain.AccountType
 import com.aylauncher.ui.screens.*
 import com.aylauncher.ui.theme.*
 
@@ -37,7 +37,7 @@ fun AYLauncherApp() {
         ) {
             Sidebar(
                 current = currentScreen,
-                activeUsername = activeAccount?.username,
+                activeUsername = activeAccount?.username ?: "CreeperFan",
                 onNavigate = { currentScreen = it }
             )
 
@@ -45,11 +45,11 @@ fun AYLauncherApp() {
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(16.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 when (currentScreen) {
                     AppScreen.Home -> HomeScreen(
-                        activeUsername = activeAccount?.username,
+                        activeUsername = activeAccount?.username ?: "CreeperFan",
                         onPlay = { currentScreen = AppScreen.Installations },
                         onOpenAccount = { currentScreen = AppScreen.Account }
                     )
@@ -59,13 +59,7 @@ fun AYLauncherApp() {
                     AppScreen.Settings -> SettingsScreen()
                     AppScreen.About -> AboutScreen()
                     AppScreen.FileManager -> FileManagerScreen()
-                    AppScreen.Account -> AccountScreen(
-                        onSelectOffline = { /* already handled inside */ },
-                        onSelectMicrosoft = {
-                            // Placeholder: real OAuth later
-                            // For now just show a message via dialog or snackbar later
-                        }
-                    )
+                    AppScreen.Account -> AccountScreen()
                 }
             }
         }
@@ -75,52 +69,80 @@ fun AYLauncherApp() {
 @Composable
 fun Sidebar(
     current: AppScreen,
-    activeUsername: String?,
+    activeUsername: String,
     onNavigate: (AppScreen) -> Unit
 ) {
     Column(
         modifier = Modifier
-            .width(96.dp)
+            .width(88.dp)
             .fillMaxHeight()
-            .background(SoftCream)
-            .padding(vertical = 16.dp),
+            .background(SidebarBg)
+            .padding(vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Creeper face logo
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(CreeperGreen)
+                .size(52.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(CreeperFaceGreen)
                 .clickable { onNavigate(AppScreen.Home) },
             contentAlignment = Alignment.Center
         ) {
-            Text("AY", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            // Simple creeper-face blocks using nested boxes
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(10.dp, 10.dp).background(Color(0xFF1B1B1B), RoundedCornerShape(1.dp)))
+                    Box(Modifier.size(10.dp, 10.dp).background(Color(0xFF1B1B1B), RoundedCornerShape(1.dp)))
+                }
+                Spacer(Modifier.height(4.dp))
+                Box(Modifier.size(12.dp, 10.dp).background(Color(0xFF1B1B1B), RoundedCornerShape(1.dp)))
+            }
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(18.dp))
 
-        SidebarItem("🏠", "Home", current == AppScreen.Home) { onNavigate(AppScreen.Home) }
-        SidebarItem("📦", "Installations", current == AppScreen.Installations) { onNavigate(AppScreen.Installations) }
+        SidebarItem("⌂", "Home", current == AppScreen.Home) { onNavigate(AppScreen.Home) }
+        SidebarItem("▦", "Installations", current == AppScreen.Installations) { onNavigate(AppScreen.Installations) }
         SidebarItem("👕", "Skins", current == AppScreen.Skins) { onNavigate(AppScreen.Skins) }
-        SidebarItem("🛒", "Marketplace", current == AppScreen.Marketplace) { onNavigate(AppScreen.Marketplace) }
-        SidebarItem("⚙️", "Settings", current == AppScreen.Settings) { onNavigate(AppScreen.Settings) }
-        SidebarItem("ℹ️", "About", current == AppScreen.About) { onNavigate(AppScreen.About) }
-        SidebarItem("📁", "File Manager", current == AppScreen.FileManager) { onNavigate(AppScreen.FileManager) }
-        SidebarItem("👤", "Account", current == AppScreen.Account) { onNavigate(AppScreen.Account) }
+        SidebarItem("💼", "Marketplace", current == AppScreen.Marketplace) { onNavigate(AppScreen.Marketplace) }
+        SidebarItem("⚙", "Settings", current == AppScreen.Settings) { onNavigate(AppScreen.Settings) }
+        SidebarItem("ℹ", "About", current == AppScreen.About) { onNavigate(AppScreen.About) }
 
         Spacer(Modifier.weight(1f))
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("● Online", color = OnlineGreen, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        // Bottom user status matching screenshot
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(CreeperFaceGreen)
+            )
+            Spacer(Modifier.height(4.dp))
             Text(
-                activeUsername ?: "No account",
-                color = TextPrimary,
-                fontSize = 11.sp,
+                activeUsername.take(12),
+                fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
                 maxLines = 1
             )
-            Text("AY Launcher", color = TextSecondary, fontSize = 10.sp)
-            Text("v0.1.0", color = TextSecondary, fontSize = 10.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(6.dp)
+                        .clip(CircleShape)
+                        .background(OnlineGreen)
+                )
+                Spacer(Modifier.width(3.dp))
+                Text("Online", fontSize = 9.sp, color = OnlineGreen)
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("Latest Release", fontSize = 8.sp, color = TextSecondary)
+            Text("1.21.10", fontSize = 9.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
         }
     }
 }
@@ -138,8 +160,8 @@ fun SidebarItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp, vertical = 3.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .clip(RoundedCornerShape(14.dp))
             .background(bg)
             .clickable(
                 interactionSource = interactionSource,
@@ -150,10 +172,11 @@ fun SidebarItem(
             .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(icon, fontSize = 22.sp)
+        Text(icon, fontSize = 18.sp, color = if (selected) TextPrimary else TextSecondary)
+        Spacer(Modifier.height(2.dp))
         Text(
             text = label,
-            fontSize = 10.sp,
+            fontSize = 9.sp,
             color = if (selected) TextPrimary else TextSecondary,
             maxLines = 1,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
