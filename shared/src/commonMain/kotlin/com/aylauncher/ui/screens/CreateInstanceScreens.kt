@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aylauncher.data.AppState
 import com.aylauncher.domain.LoaderType
+import com.aylauncher.data.VersionService
 import com.aylauncher.ui.theme.*
 
 @Composable
@@ -130,10 +131,10 @@ fun InstallationsScreen(
                     showCreateForm = false
                     showNewInstance = false
                 },
-                onCreate = { name, loader, ram ->
+                onCreate = { name, version, loader, ram ->
                     AppState.instances.create(
                         name = name,
-                        minecraftVersion = "1.21.3",
+                        minecraftVersion = version,
                         loader = loader,
                         ramMb = ram
                     )
@@ -238,7 +239,7 @@ fun InstanceTypeCard(
 @Composable
 fun CreateInstanceForm(
     onCancel: () -> Unit = {},
-    onCreate: (name: String, loader: LoaderType, ramMb: Int) -> Unit = { _, _, _ -> }
+    onCreate: (name: String, version: String, loader: LoaderType, ramMb: Int) -> Unit = { _, _, _, _ -> }
 ) {
     var name by remember { mutableStateOf("Fabric 1.21") }
     var ram by remember { mutableStateOf(4096f) }
@@ -289,6 +290,7 @@ fun CreateInstanceForm(
 
             Spacer(Modifier.height(16.dp))
             Text("MINECRAFT VERSION", fontWeight = FontWeight.SemiBold)
+            var selectedVersion by remember { mutableStateOf(VersionService.popularVersions.first().id) }
             Surface(
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -298,8 +300,22 @@ fun CreateInstanceForm(
                     Modifier.padding(horizontal = 16.dp).fillMaxSize(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("1.21.3", Modifier.weight(1f))
+                    Text(selectedVersion, Modifier.weight(1f))
                     Text("▼", color = TextSecondary)
+                }
+            }
+            // Simple chips for quick version pick (full dropdown later)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                VersionService.releases().take(5).forEach { v ->
+                    FilterChip(
+                        selected = selectedVersion == v.id,
+                        onClick = { selectedVersion = v.id },
+                        label = { Text(v.id, fontSize = 11.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = GoldButton
+                        )
+                    )
                 }
             }
 
@@ -369,7 +385,7 @@ fun CreateInstanceForm(
                             "OPTIFINE" -> LoaderType.OPTIFINE
                             else -> LoaderType.VANILLA
                         }
-                        onCreate(name, loader, ram.toInt())
+                        onCreate(name, selectedVersion, loader, ram.toInt())
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier.weight(1f),

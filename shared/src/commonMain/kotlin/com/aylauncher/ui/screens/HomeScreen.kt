@@ -20,6 +20,7 @@ import com.aylauncher.ui.theme.*
 
 @Composable
 fun HomeScreen(
+    activeUsername: String? = null,
     onPlay: () -> Unit = {},
     onOpenAccount: () -> Unit = {}
 ) {
@@ -40,10 +41,9 @@ fun HomeScreen(
                 color = TextPrimary
             )
             Spacer(Modifier.weight(1f))
-            // Search
             Box(
                 modifier = Modifier
-                    .width(280.dp)
+                    .width(260.dp)
                     .height(40.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White)
@@ -53,7 +53,6 @@ fun HomeScreen(
                 Text("🔍  Search for anything...", color = TextSecondary, fontSize = 14.sp)
             }
             Spacer(Modifier.width(12.dp))
-            // User chip
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = SoftCream,
@@ -70,12 +69,16 @@ fun HomeScreen(
                             .background(CreeperGreen)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Player", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        activeUsername ?: "Sign in",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
 
-        // Hero banner – "The End awaits..."
+        // Hero banner
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +129,6 @@ fun HomeScreen(
 
         Spacer(Modifier.height(22.dp))
 
-        // Featured News
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -146,9 +148,7 @@ fun HomeScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // Bottom cards
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            // What's New
             Card(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(20.dp),
@@ -165,7 +165,6 @@ fun HomeScreen(
                 }
             }
 
-            // Quick Links
             Card(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(20.dp),
@@ -189,7 +188,6 @@ fun HomeScreen(
                 }
             }
 
-            // Join Realms
             Card(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(20.dp),

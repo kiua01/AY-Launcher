@@ -15,6 +15,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aylauncher.data.AppState
+import com.aylauncher.domain.AccountType
 import com.aylauncher.ui.screens.*
 import com.aylauncher.ui.theme.*
 
@@ -25,6 +27,7 @@ enum class AppScreen {
 @Composable
 fun AYLauncherApp() {
     var currentScreen by remember { mutableStateOf(AppScreen.Home) }
+    val activeAccount by AppState.accounts.activeAccount.collectAsState()
 
     AYLauncherTheme {
         Row(
@@ -32,13 +35,12 @@ fun AYLauncherApp() {
                 .fillMaxSize()
                 .background(CreamBackground)
         ) {
-            // Left Sidebar – matches the design
             Sidebar(
                 current = currentScreen,
+                activeUsername = activeAccount?.username,
                 onNavigate = { currentScreen = it }
             )
 
-            // Main content area
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -47,20 +49,22 @@ fun AYLauncherApp() {
             ) {
                 when (currentScreen) {
                     AppScreen.Home -> HomeScreen(
+                        activeUsername = activeAccount?.username,
                         onPlay = { currentScreen = AppScreen.Installations },
                         onOpenAccount = { currentScreen = AppScreen.Account }
                     )
-                    AppScreen.Installations -> InstallationsScreen(
-                        onCreateNew = { /* will open dialog later */ }
-                    )
+                    AppScreen.Installations -> InstallationsScreen()
                     AppScreen.Skins -> PlaceholderScreen("Skins")
                     AppScreen.Marketplace -> PlaceholderScreen("Marketplace")
                     AppScreen.Settings -> SettingsScreen()
                     AppScreen.About -> AboutScreen()
                     AppScreen.FileManager -> FileManagerScreen()
                     AppScreen.Account -> AccountScreen(
-                        onSelectOffline = { /* handle offline */ },
-                        onSelectMicrosoft = { /* handle microsoft */ }
+                        onSelectOffline = { /* already handled inside */ },
+                        onSelectMicrosoft = {
+                            // Placeholder: real OAuth later
+                            // For now just show a message via dialog or snackbar later
+                        }
                     )
                 }
             }
@@ -71,6 +75,7 @@ fun AYLauncherApp() {
 @Composable
 fun Sidebar(
     current: AppScreen,
+    activeUsername: String?,
     onNavigate: (AppScreen) -> Unit
 ) {
     Column(
@@ -81,7 +86,6 @@ fun Sidebar(
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo / Creeper-style mark
         Box(
             modifier = Modifier
                 .size(56.dp)
@@ -95,60 +99,26 @@ fun Sidebar(
 
         Spacer(Modifier.height(20.dp))
 
-        SidebarItem(
-            icon = "🏠",
-            label = "Home",
-            selected = current == AppScreen.Home,
-            onClick = { onNavigate(AppScreen.Home) }
-        )
-        SidebarItem(
-            icon = "📦",
-            label = "Installations",
-            selected = current == AppScreen.Installations,
-            onClick = { onNavigate(AppScreen.Installations) }
-        )
-        SidebarItem(
-            icon = "👕",
-            label = "Skins",
-            selected = current == AppScreen.Skins,
-            onClick = { onNavigate(AppScreen.Skins) }
-        )
-        SidebarItem(
-            icon = "🛒",
-            label = "Marketplace",
-            selected = current == AppScreen.Marketplace,
-            onClick = { onNavigate(AppScreen.Marketplace) }
-        )
-        SidebarItem(
-            icon = "⚙️",
-            label = "Settings",
-            selected = current == AppScreen.Settings,
-            onClick = { onNavigate(AppScreen.Settings) }
-        )
-        SidebarItem(
-            icon = "ℹ️",
-            label = "About",
-            selected = current == AppScreen.About,
-            onClick = { onNavigate(AppScreen.About) }
-        )
-        SidebarItem(
-            icon = "📁",
-            label = "File Manager",
-            selected = current == AppScreen.FileManager,
-            onClick = { onNavigate(AppScreen.FileManager) }
-        )
-        SidebarItem(
-            icon = "👤",
-            label = "Account",
-            selected = current == AppScreen.Account,
-            onClick = { onNavigate(AppScreen.Account) }
-        )
+        SidebarItem("🏠", "Home", current == AppScreen.Home) { onNavigate(AppScreen.Home) }
+        SidebarItem("📦", "Installations", current == AppScreen.Installations) { onNavigate(AppScreen.Installations) }
+        SidebarItem("👕", "Skins", current == AppScreen.Skins) { onNavigate(AppScreen.Skins) }
+        SidebarItem("🛒", "Marketplace", current == AppScreen.Marketplace) { onNavigate(AppScreen.Marketplace) }
+        SidebarItem("⚙️", "Settings", current == AppScreen.Settings) { onNavigate(AppScreen.Settings) }
+        SidebarItem("ℹ️", "About", current == AppScreen.About) { onNavigate(AppScreen.About) }
+        SidebarItem("📁", "File Manager", current == AppScreen.FileManager) { onNavigate(AppScreen.FileManager) }
+        SidebarItem("👤", "Account", current == AppScreen.Account) { onNavigate(AppScreen.Account) }
 
         Spacer(Modifier.weight(1f))
 
-        // Online indicator
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("● Online", color = OnlineGreen, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            Text(
+                activeUsername ?: "No account",
+                color = TextPrimary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
             Text("AY Launcher", color = TextSecondary, fontSize = 10.sp)
             Text("v0.1.0", color = TextSecondary, fontSize = 10.sp)
         }
@@ -173,7 +143,7 @@ fun SidebarItem(
             .background(bg)
             .clickable(
                 interactionSource = interactionSource,
-                indication = null, // keep clean look matching designs
+                indication = null,
                 role = Role.Button,
                 onClick = onClick
             )

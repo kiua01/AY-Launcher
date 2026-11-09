@@ -23,9 +23,18 @@ class AccountRepository {
     val activeAccount: StateFlow<Account?> = _active.asStateFlow()
 
     fun addOffline(username: String): Account {
+        val clean = username.trim()
+        // Reuse existing offline account with same name if present
+        val existing = _accounts.value.find {
+            it.type == AccountType.OFFLINE && it.username.equals(clean, ignoreCase = true)
+        }
+        if (existing != null) {
+            _active.value = existing
+            return existing
+        }
         val account = Account(
-            id = "offline-${username.lowercase()}",
-            username = username,
+            id = "offline-${clean.lowercase()}-${System.currentTimeMillis()}",
+            username = clean,
             type = AccountType.OFFLINE
         )
         _accounts.update { it + account }
@@ -35,6 +44,13 @@ class AccountRepository {
 
     fun setActive(account: Account?) {
         _active.value = account
+    }
+
+    fun remove(id: String) {
+        _accounts.update { list -> list.filterNot { it.id == id } }
+        if (_active.value?.id == id) {
+            _active.value = _accounts.value.firstOrNull()
+        }
     }
 }
 
