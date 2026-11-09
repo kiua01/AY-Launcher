@@ -14,12 +14,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aylauncher.data.AppState
+import com.aylauncher.domain.LoaderType
 import com.aylauncher.ui.theme.*
 
 @Composable
 fun InstallationsScreen(
     onCreateNew: () -> Unit = {}
 ) {
+    val instances by AppState.instances.instances.collectAsState()
     var showNewInstance by remember { mutableStateOf(false) }
     var showCreateForm by remember { mutableStateOf(false) }
 
@@ -46,33 +49,67 @@ fun InstallationsScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // Empty state for now
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftCream)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        if (instances.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SoftCream)
             ) {
-                Text("📦", fontSize = 48.sp)
-                Spacer(Modifier.height(12.dp))
-                Text("No instances yet", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-                Text(
-                    "Create a Normal or Modpack instance to get started.",
-                    color = TextSecondary,
-                    fontSize = 14.sp
-                )
-                Spacer(Modifier.height(20.dp))
-                Button(
-                    onClick = { showNewInstance = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = GoldButton),
-                    shape = RoundedCornerShape(20.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Create your first instance →", color = TextPrimary, fontWeight = FontWeight.Bold)
+                    Text("📦", fontSize = 48.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Text("No instances yet", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
+                    Text(
+                        "Create a Normal or Modpack instance to get started.",
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                    Spacer(Modifier.height(20.dp))
+                    Button(
+                        onClick = { showNewInstance = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = GoldButton),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text("Create your first instance →", color = TextPrimary, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        } else {
+            instances.forEach { inst ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🟩", fontSize = 28.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(inst.name, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "${inst.loader} • ${inst.minecraftVersion} • ${inst.ramMb} MB",
+                                fontSize = 13.sp,
+                                color = TextSecondary
+                            )
+                        }
+                        Button(
+                            onClick = { /* play */ },
+                            colors = ButtonDefaults.buttonColors(containerColor = GoldButton),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Play", color = TextPrimary, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -80,13 +117,8 @@ fun InstallationsScreen(
         if (showNewInstance && !showCreateForm) {
             Spacer(Modifier.height(24.dp))
             NewInstanceDialogContent(
-                onSelectNormal = {
-                    showCreateForm = true
-                },
-                onSelectModpack = {
-                    // future: open modpack browser
-                    showNewInstance = false
-                },
+                onSelectNormal = { showCreateForm = true },
+                onSelectModpack = { showNewInstance = false },
                 onDismiss = { showNewInstance = false }
             )
         }
@@ -98,10 +130,15 @@ fun InstallationsScreen(
                     showCreateForm = false
                     showNewInstance = false
                 },
-                onCreate = {
+                onCreate = { name, loader, ram ->
+                    AppState.instances.create(
+                        name = name,
+                        minecraftVersion = "1.21.3",
+                        loader = loader,
+                        ramMb = ram
+                    )
                     showCreateForm = false
                     showNewInstance = false
-                    // TODO: actually create instance
                 }
             )
         }
@@ -201,7 +238,7 @@ fun InstanceTypeCard(
 @Composable
 fun CreateInstanceForm(
     onCancel: () -> Unit = {},
-    onCreate: () -> Unit = {}
+    onCreate: (name: String, loader: LoaderType, ramMb: Int) -> Unit = { _, _, _ -> }
 ) {
     var name by remember { mutableStateOf("Fabric 1.21") }
     var ram by remember { mutableStateOf(4096f) }
@@ -277,7 +314,7 @@ fun CreateInstanceForm(
                     Modifier.padding(horizontal = 16.dp).fillMaxSize(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("LATEST (0.16.9)", Modifier.weight(1f))
+                    Text("LATEST", Modifier.weight(1f))
                     Text("▼", color = TextSecondary)
                 }
             }
@@ -323,7 +360,17 @@ fun CreateInstanceForm(
                     Text("CANCEL")
                 }
                 Button(
-                    onClick = onCreate,
+                    onClick = {
+                        val loader = when (selectedLoader) {
+                            "FABRIC" -> LoaderType.FABRIC
+                            "FORGE" -> LoaderType.FORGE
+                            "NEOFORGE" -> LoaderType.NEOFORGE
+                            "QUILT" -> LoaderType.QUILT
+                            "OPTIFINE" -> LoaderType.OPTIFINE
+                            else -> LoaderType.VANILLA
+                        }
+                        onCreate(name, loader, ram.toInt())
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp)
